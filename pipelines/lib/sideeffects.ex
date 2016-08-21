@@ -1,5 +1,5 @@
 defmodule Users do
-  def create(%{user: user_data} = struct) do
+  def create(%{user: _user_data} = struct) do
     struct
     |> validate
     |> persist_user_struct
@@ -8,23 +8,13 @@ defmodule Users do
 
   # We make sure that the user data is valid, if it is, continue. If not, we'll short circuit through
   defp validate(user_data) do
-    struct = Users.Validation.validate(user_data)
-
-    case struct do
-      {:ok, user_data} -> struct
-      {:error, user_data, _reason} -> struct
-    end 
+   Users.Validation.validate(user_data)
   end
 
   # We're doing IO, which can fail. If it DOES fail, we don't continue in our main pipeline.
-  defp persist_user_struct({:error, user_data, _reason} = struct), do: struct
+  defp persist_user_struct({:error, _user_data, _reason} = struct), do: struct
   defp persist_user_struct({:ok, user_data}) do
-    struct = PersistenceLibraryOfChoice.insert(user_data)
-
-    case struct do
-      {:ok, _ } -> struct
-      {:error, _ } -> struct
-    end
+    PersistenceLibraryOfChoice.insert(user_data)
   end
 
   # Fire and forget; these are independent processes that should not hold up returning from the create method
@@ -52,15 +42,14 @@ defmodule Users.Validation do
     |> password_long_enough
   end
 
-  defp name_present(struct = {:ok, %{user: %{name: name}} = user_data}), do: struct
-  defp name_present(struct = {:error, user_data, _}), do: struct
+  defp name_present(struct = {:ok, %{user: %{name: _name}}}), do: struct
   defp name_present({_, user_data}), do: {:error, user_data, :no_user_name}
 
-  defp password_present(struct = {:ok, %{user: %{password: password}}}), do: struct
-  defp password_present(struct = {:error, user_data, _}), do: struct
+  defp password_present(struct = {:ok, %{user: %{password: _password}}}), do: struct
+  defp password_present(struct = {:error, _user_data, _}), do: struct
   defp password_present({_, user_data}), do: {:error, user_data, :no_password}
 
-  defp password_long_enough(struct = {:error, user_data, _}), do: struct
+  defp password_long_enough(struct = {:error, _user_data, _}), do: struct
   defp password_long_enough(struct = {:ok, user_data = %{user: %{password: password}}}) do
     if String.length(password) > 6 do
       struct
@@ -72,15 +61,15 @@ end
 
 # Mocks/no-ops
 defmodule Users.Notifications do
-  def rss(user_data) do
+  def rss(_user_data) do
     nil
   end
 
-  def irc(user_data) do
+  def irc(_user_data) do
     nil
   end
 
-  def email(user_data) do
+  def email(_user_data) do
     nil
   end
 end
