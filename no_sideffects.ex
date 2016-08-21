@@ -1,33 +1,41 @@
+defmodule Success do
+  defstruct value: nil
+end
+
+defmodule Failure do
+  defstruct value: nil, reason: nil
+end
+
 defmodule Users do
   defmodule UserNameValidation do
     def validate(user_name) do
-      {:ok, user_name}
+      %Success{value: user_name}
       |> ensure_length
       |> ensure_characters_only
       |> ensure_no_dirty_words
     end
 
-    defp ensure_length({:invalid, user_name, reason} = error_struct), do: error_struct
-    defp ensure_length({:ok, user_name} = struct) do
+    defp ensure_length(%Failure{} = error_struct), do: error_struct
+    defp ensure_length(%Success{value: user_name} = struct) do
       cond do
-        String.length(user_name) > 15 -> {:invalid, user_name, :too_long}
+        String.length(user_name) > 15 -> %Failure{value: user_name, reason: :too_long}
         true -> struct
       end
     end
 
-    defp ensure_characters_only({:invalid, user_name, reason} = error_struct), do: error_struct
-    defp ensure_characters_only({:ok, user_name} = struct) do
+    defp ensure_characters_only(%Failure{} = error_struct), do: error_struct
+    defp ensure_characters_only(%Success{value: user_name} = struct) do
       if Regex.match?(~r/^[a-zA-Z]+$/, user_name) do
         struct
       else
-        {:invalid, user_name, :contains_illegal_characters}
+        %Failure{value: user_name, reason: :contains_illegal_characters}
       end
     end
 
-    defp ensure_no_dirty_words({:invalid, user_name, reason} = error_struct), do: error_struct
-    defp ensure_no_dirty_words({:ok, user_name} = struct) do
+    defp ensure_no_dirty_words(%Failure{} = error_struct), do: error_struct
+    defp ensure_no_dirty_words(%Success{value: user_name} = struct) do
       if DirtyWords.word_is_dirty?(user_name) do
-        {:invalid, user_name, :contains_dirty_words}
+        %Failure{value: user_name, reason: :contains_dirty_words}
       else
         struct
       end
